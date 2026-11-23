@@ -1,7 +1,9 @@
+from pathlib import Path
 from typing import Annotated, Literal
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StringConstraints
 
 app = FastAPI()
@@ -65,3 +67,6 @@ def update_task(task_id: str, data: TaskUpdate) -> Task:
 def delete_task(task_id: str) -> None:
     task = find_task(task_id)
     tasks.remove(task)
+
+
+app.mount("/", StaticFiles(directory=Path(__file__).parent.parent / "frontend", html=True))
