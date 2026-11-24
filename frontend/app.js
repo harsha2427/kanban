@@ -4,11 +4,10 @@ const titleInput = document.getElementById('task-title');
 const descriptionInput = document.getElementById('task-description');
 const submitButton = form.querySelector('button');
 
-let tasks = JSON.parse(localStorage.getItem('kanban-tasks')) || [];
+let tasks = [];
 let editingId = null;
 
 function render() {
-  localStorage.setItem('kanban-tasks', JSON.stringify(tasks));
   board.querySelectorAll('.task-list').forEach(list => list.replaceChildren());
 
   tasks.forEach(task => {
@@ -51,19 +50,14 @@ form.addEventListener('submit', event => {
   const description = descriptionInput.value.trim();
 
   if (editingId) {
-    const task = tasks.find(t => t.id === editingId);
-    if (task) {
-      task.title = title;
-      task.description = description;
-    }
+    api('PATCH', `/tasks/${editingId}`, { title, description });
     editingId = null;
     submitButton.textContent = 'Add Task';
   } else {
-    tasks.push({ id: crypto.randomUUID(), title, description, status: 'todo' });
+    api('POST', '/tasks', { title, description });
   }
 
   form.reset();
-  render();
 });
 
 board.addEventListener('click', event => {
@@ -73,8 +67,7 @@ board.addEventListener('click', event => {
   const id = event.target.closest('.card').dataset.id;
 
   if (action === 'delete' && confirm('Delete this task?')) {
-    tasks = tasks.filter(task => task.id !== id);
-    render();
+    api('DELETE', `/tasks/${id}`);
   }
 
   if (action === 'edit') {
@@ -89,9 +82,7 @@ board.addEventListener('click', event => {
 
 board.addEventListener('change', event => {
   const id = event.target.closest('.card').dataset.id;
-  const task = tasks.find(t => t.id === id);
-  task.status = event.target.value;
-  render();
+  api('PATCH', `/tasks/${id}`, { status: event.target.value });
 });
 
 board.addEventListener('dragstart', event => {
@@ -109,13 +100,26 @@ board.addEventListener('drop', event => {
   if (!column) return;
 
   const id = event.dataTransfer.getData('text/plain');
-  const task = tasks.find(t => t.id === id);
-  task.status = column.dataset.status;
-  render();
+  api('PATCH', `/tasks/${id}`, { status: column.dataset.status });
 });
 
 board.addEventListener('dragend', event => {
   event.target.classList.remove('dragging');
 });
 
-render();
+async function api(method, path, body) {
+  await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  loadTasks();
+}
+
+async function loadTasks() {
+  const response = await fetch('/tasks');
+  tasks = await response.json();
+  render();
+}
+
+loadTasks();
