@@ -3,6 +3,8 @@ const form = document.getElementById('task-form');
 const titleInput = document.getElementById('task-title');
 const descriptionInput = document.getElementById('task-description');
 const submitButton = form.querySelector('button');
+const cancelButton = document.getElementById('cancel-edit');
+const errorMessage = document.getElementById('error');
 
 let tasks = [];
 let editingId = null;
@@ -21,6 +23,7 @@ function render() {
 
     const description = document.createElement('p');
     description.textContent = task.description;
+    description.hidden = !task.description;
 
     const editButton = document.createElement('button');
     editButton.textContent = 'Edit';
@@ -40,6 +43,22 @@ function render() {
 
     board.querySelector(`[data-status="${task.status}"] .task-list`).append(card);
   });
+
+  board.querySelectorAll('.column').forEach(column => {
+    column.querySelector('h2').dataset.count = tasks.filter(t => t.status === column.dataset.status).length;
+  });
+}
+
+function resetForm() {
+  editingId = null;
+  submitButton.textContent = 'Add Task';
+  cancelButton.hidden = true;
+  form.reset();
+}
+
+function showError(message) {
+  errorMessage.textContent = message;
+  errorMessage.hidden = !message;
 }
 
 form.addEventListener('submit', event => {
@@ -51,14 +70,14 @@ form.addEventListener('submit', event => {
 
   if (editingId) {
     api('PATCH', `/tasks/${editingId}`, { title, description });
-    editingId = null;
-    submitButton.textContent = 'Add Task';
   } else {
     api('POST', '/tasks', { title, description });
   }
 
-  form.reset();
+  resetForm();
 });
+
+cancelButton.addEventListener('click', resetForm);
 
 board.addEventListener('click', event => {
   const action = event.target.dataset.action;
@@ -76,6 +95,7 @@ board.addEventListener('click', event => {
     descriptionInput.value = task.description;
     editingId = id;
     submitButton.textContent = 'Save';
+    cancelButton.hidden = false;
     titleInput.focus();
   }
 });
@@ -108,18 +128,28 @@ board.addEventListener('dragend', event => {
 });
 
 async function api(method, path, body) {
-  await fetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  showError('');
+  try {
+    const response = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) showError(`Could not save the change (error ${response.status}).`);
+  } catch {
+    showError('Cannot reach the server. Is it running?');
+  }
   loadTasks();
 }
 
 async function loadTasks() {
-  const response = await fetch('/tasks');
-  tasks = await response.json();
-  render();
+  try {
+    const response = await fetch('/tasks');
+    tasks = await response.json();
+    render();
+  } catch {
+    showError('Cannot reach the server. Is it running?');
+  }
 }
 
 loadTasks();

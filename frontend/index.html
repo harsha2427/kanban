@@ -10,10 +10,12 @@
   <header>
     <h1>Kanban Board</h1>
     <form id="task-form">
-      <input id="task-title" placeholder="Task title" required>
-      <textarea id="task-description" placeholder="Description (optional)"></textarea>
+      <input id="task-title" placeholder="Task title" aria-label="Task title" required>
+      <textarea id="task-description" placeholder="Description (optional)" aria-label="Description"></textarea>
       <button type="submit">Add Task</button>
+      <button type="button" id="cancel-edit" hidden>Cancel</button>
     </form>
+    <p id="error" role="alert" hidden></p>
   </header>
 
   <main id="board">

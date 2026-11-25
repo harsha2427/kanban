@@ -77,6 +77,15 @@ select {
   opacity: 0.5;
 }
 
+.column h2::after {
+  content: " (" attr(data-count) ")";
+}
+
+#error {
+  color: #b42318;
+  margin: 0.5rem 0 0;
+}
+
 @media (max-width: 700px) {
   #board {
     grid-template-columns: 1fr;
